@@ -1,6 +1,11 @@
 {
   "identifier": "default",
-  "description": "Default capabilities",
+  "description": "Default capabilities for A50 Dock Switch",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "fs:default",
+    "fs:allow-app-config-read",
+    "fs:allow-app-config-write"
+  ]
 }

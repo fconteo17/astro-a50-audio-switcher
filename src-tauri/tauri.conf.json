@@ -13,9 +13,14 @@
         "width": 400,
         "height": 550,
         "resizable": false,
-        "center": true
+        "center": true,
+        "decorations": true
       }
-    ]
+    ],
+    "trayIcon": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": false
+    }
   },
   "bundle": {
     "active": true,

@@ -1,10 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A50 Dock Switch</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>A50 Dock Switch</h1>
+    <div id="app">
+        <!-- Status Dashboard -->
+        <div class="panel" id="status-panel">
+            <h2>ASTRO A50 Dock Switch</h2>
+            <div class="status-grid">
+                <span class="label">Status</span>
+                <span id="status-value" class="value">CONNECTING...</span>
+
+                <span class="label">Battery</span>
+                <span id="battery-value" class="value">
+                    <span class="battery-bar">
+                        <span id="battery-fill" style="width: 0%"></span>
+                    </span>
+                    <span id="battery-percent">--</span>
+                </span>
+
+                <span class="label">Charging</span>
+                <span id="charging-value" class="value">--</span>
+
+                <span class="label">Game Audio</span>
+                <span id="game-audio-value" class="value">--</span>
+
+                <span class="label">Voice Audio</span>
+                <span id="voice-audio-value" class="value">--</span>
+
+                <span class="label">Poll</span>
+                <span id="poll-value" class="value">--</span>
+            </div>
+        </div>
+
+        <!-- Event Log -->
+        <div class="panel" id="events-panel">
+            <h3>Events</h3>
+            <div id="event-log"></div>
+        </div>
+
+        <!-- Settings (collapsible) -->
+        <div class="panel" id="settings-panel">
+            <h3 id="settings-toggle">Settings &#9660;</h3>
+            <div id="settings-content" class="hidden">
+                <fieldset>
+                    <legend>When Docked</legend>
+                    <label>Game Audio Device
+                        <select id="docked-game-device" class="device-select"></select>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="docked-same-device" checked>
+                        Use same device for voice
+                    </label>
+                    <label id="docked-voice-label" class="hidden">Voice Device
+                        <select id="docked-voice-device" class="device-select"></select>
+                    </label>
+                </fieldset>
+                <fieldset>
+                    <legend>When Undocked</legend>
+                    <label>Game Audio Device
+                        <select id="undocked-game-device" class="device-select"></select>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="undocked-same-device">
+                        Use same device for voice
+                    </label>
+                    <label id="undocked-voice-label">Voice Device
+                        <select id="undocked-voice-device" class="device-select"></select>
+                    </label>
+                </fieldset>
+                <label>Poll Interval (seconds)
+                    <input type="number" id="poll-interval" min="1" max="30" value="2">
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="auto-start">
+                    Start with Windows
+                </label>
+                <button id="save-btn">Save</button>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
 </body>
 </html>
