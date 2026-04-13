@@ -62,11 +62,23 @@ pub fn open_device() -> Result<DeviceInfo, String> {
     })
 }
 
-/// Release the A50 USB device.
-pub fn release_device(info: DeviceInfo) {
-    let _ = info.handle.release_interface(INTERFACE);
+/// Release the A50 USB device. Returns the first error if any step fails.
+pub fn release_device(info: DeviceInfo) -> Result<(), String> {
+    let mut last_err = None;
+
+    if let Err(e) = info.handle.release_interface(INTERFACE) {
+        last_err = Some(format!("Failed to release interface: {}", e));
+    }
+
     if info.was_detached {
-        let _ = info.handle.attach_kernel_driver(INTERFACE);
+        if let Err(e) = info.handle.attach_kernel_driver(INTERFACE) {
+            last_err = Some(format!("Failed to reattach kernel driver: {}", e));
+        }
+    }
+
+    match last_err {
+        Some(e) => Err(e),
+        None => Ok(()),
     }
 }
 
@@ -140,6 +152,9 @@ pub fn poll_once() -> Result<(bool, bool, bool, u8, String), String> {
             _ => Err("Failed to read device status".to_string()),
         }
     })();
-    release_device(info);
+    if let Err(e) = release_device(info) {
+        // Log but don't overwrite the actual poll result
+        eprintln!("USB release warning: {}", e);
+    }
     result
 }

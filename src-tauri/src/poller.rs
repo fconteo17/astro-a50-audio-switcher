@@ -2,7 +2,7 @@ use crate::usb;
 use crate::audio;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
-use std::thread;
+use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 use serde::Serialize;
@@ -16,6 +16,7 @@ pub struct DeviceStatus {
     pub game_device: String,
     pub voice_device: String,
     pub same_device: bool,
+    pub poll_interval: u64,
 }
 
 impl Default for DeviceStatus {
@@ -28,6 +29,7 @@ impl Default for DeviceStatus {
             game_device: String::new(),
             voice_device: String::new(),
             same_device: true,
+            poll_interval: 2,
         }
     }
 }
@@ -43,6 +45,7 @@ pub struct EventLogEntry {
 pub struct PollerControl {
     pub stop_flag: Arc<AtomicBool>,
     pub wake: Arc<(Mutex<bool>, Condvar)>,
+    pub thread_handle: Mutex<Option<JoinHandle<()>>>,
 }
 
 fn format_time() -> String {
@@ -65,7 +68,7 @@ pub fn start_poller(app: AppHandle, control: Arc<PollerControl>) {
     let wake = control.wake.clone();
     let prev_docked = Mutex::new(None::<bool>);
 
-    thread::spawn(move || {
+    let handle = thread::spawn(move || {
         loop {
             if stop_flag.load(Ordering::Relaxed) {
                 break;
@@ -107,6 +110,7 @@ pub fn start_poller(app: AppHandle, control: Arc<PollerControl>) {
                         game_device: game_device.clone(),
                         voice_device: voice_device.clone(),
                         same_device,
+                        poll_interval: config.poll_interval,
                     };
 
                     // Update shared AppState so get_status returns current data
@@ -172,8 +176,12 @@ pub fn start_poller(app: AppHandle, control: Arc<PollerControl>) {
             // Sleep for poll interval, wakeable by refresh_now or stop
             sleep_or_wake(&stop_flag, &wake, Duration::from_secs(config.poll_interval));
         }
-
     });
+
+    // Store the join handle so we can wait for clean shutdown
+    if let Ok(mut h) = control.thread_handle.lock() {
+        *h = Some(handle);
+    }
 }
 
 /// Sleep for the given duration, but wake early if stop_flag is set or wake is signaled.

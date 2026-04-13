@@ -82,6 +82,7 @@ pub fn run() {
             let poller_control = Arc::new(poller::PollerControl {
                 stop_flag: Arc::new(std::sync::atomic::AtomicBool::new(false)),
                 wake: Arc::new((Mutex::new(false), std::sync::Condvar::new())),
+                thread_handle: Mutex::new(None),
             });
 
             // Manage shared state before starting poller (poller reads config from state)
@@ -126,11 +127,17 @@ pub fn run() {
                             }
                         }
                         "quit" => {
-                            // Signal poller to stop cleanly
+                            // Signal poller to stop cleanly and wait for it
                             if let Some(state) = app.try_state::<AppState>() {
                                 state.poller_control.stop_flag.store(true, std::sync::atomic::Ordering::Relaxed);
                                 let (_, cvar) = state.poller_control.wake.as_ref();
                                 cvar.notify_one();
+                                // Wait for the poller thread to finish
+                                if let Ok(mut h) = state.poller_control.thread_handle.lock() {
+                                    if let Some(handle) = h.take() {
+                                        let _ = handle.join();
+                                    }
+                                }
                             }
                             app.exit(0);
                         }

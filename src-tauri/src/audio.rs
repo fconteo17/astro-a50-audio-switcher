@@ -104,6 +104,7 @@ fn set_default_endpoint(device_name: &str, role: &str, resource_dir: Option<&Pat
 
     let output = Command::new(&svv)
         .args(["/SetDefault", short_name, role])
+        .creation_flags(CREATE_NO_WINDOW)
         .output()
         .map_err(|e| format!("Failed to run SoundVolumeView: {}", e))?;
 

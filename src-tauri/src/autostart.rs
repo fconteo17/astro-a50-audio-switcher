@@ -22,7 +22,7 @@ pub fn enable(exe_path: &Path) -> std::result::Result<(), String> {
         // Encode as null-terminated UTF-16 for REG_SZ
         let wide: Vec<u16> = exe_path.to_string_lossy().encode_utf16().chain(std::iter::once(0)).collect();
 
-        RegSetValueExW(
+        let result = RegSetValueExW(
             key,
             &HSTRING::from(APP_NAME),
             0,
@@ -32,11 +32,11 @@ pub fn enable(exe_path: &Path) -> std::result::Result<(), String> {
                 wide.len() * 2,
             )),
         )
-        .ok()
-        .map_err(|e| format!("Failed to set Run value: {}", e))?;
+        .ok();
 
         let _ = RegCloseKey(key);
-        Ok(())
+
+        result.map_err(|e| format!("Failed to set Run value: {}", e))
     }
 }
 

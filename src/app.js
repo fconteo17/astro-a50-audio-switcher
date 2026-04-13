@@ -200,8 +200,9 @@ function updateStatus(s) {
     gameAudioValue.textContent = s.game_device || '--';
     voiceAudioValue.textContent = s.same_device ? '(same)' : (s.voice_device || '--');
 
-    // Poll
-    pollValue.textContent = pollIntervalInput.value + 's';
+    // Poll — show actual running interval from config, not the input field
+    const pollSecs = s.poll_interval || parseInt(pollIntervalInput.value, 10) || 2;
+    pollValue.textContent = pollSecs + 's';
 }
 
 // ── Event log ──────────────────────────────────────────────────
