@@ -28,6 +28,20 @@ The app polls the ASTRO A50 base station over USB (VID `0x9886`, PID `0x002C`) e
 - ASTRO A50 Gen 4 base station connected via USB
 - [SoundVolumeView.exe](https://www.nirsoft.net/utils/sound_volume_view.html) — bundled automatically in release builds; for dev mode, place it in `src-tauri/target/debug/`
 
+### Setting up the USB driver with Zadig
+
+The app communicates with the A50 base station directly over USB using **WinUSB**. By default, Windows assigns a proprietary driver to the device, which blocks direct USB access. You need to replace it with WinUSB using [Zadig](https://zadig.akeo.ie/):
+
+1. Download and run [Zadig](https://zadig.akeo.ie/)
+2. In the menu, go to **Options → List All Devices**
+3. Find **"Astro Gaming - Astro A50 (Interface 6)"** in the dropdown
+4. Set the driver to **WinUSB** (use the arrow buttons to cycle through options)
+5. Click **Replace Driver**
+
+> **Note:** This only replaces the driver for the A50's HID interface (interface 6). The audio functionality of the headset is unaffected — it will still appear as a normal audio device in Windows.
+
+After this step, the app will be able to poll the base station for dock status and battery information.
+
 ## Development
 
 ```bash
