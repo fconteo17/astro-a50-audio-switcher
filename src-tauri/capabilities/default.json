@@ -5,7 +5,9 @@
   "permissions": [
     "core:default",
     "fs:default",
-    "fs:allow-app-config-read",
-    "fs:allow-app-config-write"
+    "fs:allow-appconfig-read",
+    "fs:allow-appconfig-write",
+    "fs:allow-appconfig-read-recursive",
+    "fs:allow-appconfig-write-recursive"
   ]
 }

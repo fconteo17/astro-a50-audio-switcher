@@ -7,18 +7,21 @@ let audioDevices = [];
 
 // ── DOM References ──────────────────────────────────────────────
 
-const statusValue = document.getElementById('status-value');
-const batteryFill = document.getElementById('battery-fill');
+const dockState     = document.getElementById('dock-state');
+const dockDot       = document.getElementById('dock-dot');
+const dockLabel     = document.getElementById('dock-label');
+const dockSublabel  = document.getElementById('dock-sublabel');
+const batteryFillRow = document.getElementById('battery-fill-row');
 const batteryPercent = document.getElementById('battery-percent');
-const batteryContainer = document.getElementById('battery-value');
 const chargingValue = document.getElementById('charging-value');
 const gameAudioValue = document.getElementById('game-audio-value');
 const voiceAudioValue = document.getElementById('voice-audio-value');
-const pollValue = document.getElementById('poll-value');
-const eventLog = document.getElementById('event-log');
+const pollValue      = document.getElementById('poll-value');
+const eventLog      = document.getElementById('event-log');
 
 // Settings
-const settingsToggle = document.getElementById('settings-toggle');
+const settingsToggle  = document.getElementById('settings-toggle');
+const toggleIcon      = document.getElementById('toggle-icon');
 const settingsContent = document.getElementById('settings-content');
 const dockedGameSelect = document.getElementById('docked-game-device');
 const dockedVoiceSelect = document.getElementById('docked-voice-device');
@@ -36,9 +39,7 @@ const saveBtn = document.getElementById('save-btn');
 
 settingsToggle.addEventListener('click', () => {
     settingsContent.classList.toggle('hidden');
-    settingsToggle.textContent = settingsContent.classList.contains('hidden')
-        ? 'Settings \u25B6'
-        : 'Settings \u25BC';
+    toggleIcon.classList.toggle('open');
 });
 
 // ── Same-device checkboxes ──────────────────────────────────────
@@ -66,7 +67,7 @@ async function loadAudioDevices() {
 }
 
 function populateSelect(select, devices) {
-    select.innerHTML = '<option value="">-- Select device --</option>';
+    select.innerHTML = '<option value="">-- Select --</option>';
     for (const d of devices) {
         const opt = document.createElement('option');
         opt.value = d.name;
@@ -80,20 +81,14 @@ function populateSelect(select, devices) {
 async function loadConfig() {
     try {
         const config = await invoke('get_config');
-
-        // Set select values
         setSelectedOption(dockedGameSelect, config.docked_game_device);
         setSelectedOption(dockedVoiceSelect, config.docked_voice_device);
         setSelectedOption(undockedGameSelect, config.undocked_game_device);
         setSelectedOption(undockedVoiceSelect, config.undocked_voice_device);
-
-        // Set checkboxes
         dockedSameCheckbox.checked = config.docked_same_device;
         undockedSameCheckbox.checked = config.undocked_same_device;
         dockedVoiceLabel.classList.toggle('hidden', config.docked_same_device);
         undockedVoiceLabel.classList.toggle('hidden', config.undocked_same_device);
-
-        // Set other values
         pollIntervalInput.value = config.poll_interval;
         autoStartCheckbox.checked = config.auto_start;
     } catch (e) {
@@ -120,80 +115,92 @@ saveBtn.addEventListener('click', async () => {
     };
 
     try {
-        await invoke('save_config', { new_config: config });
+        await invoke('save_config', { newConfig: config });
         if (config.auto_start) {
             await invoke('set_auto_start', { enabled: true });
         } else {
             await invoke('set_auto_start', { enabled: false });
         }
-        saveBtn.textContent = 'Saved!';
-        setTimeout(() => { saveBtn.textContent = 'Save'; }, 1500);
+        saveBtn.classList.add('saved');
+        saveBtn.querySelector('.save-btn-text').textContent = 'SAVED';
+        setTimeout(() => {
+            saveBtn.classList.remove('saved');
+            saveBtn.querySelector('.save-btn-text').textContent = 'SAVE CONFIG';
+        }, 1500);
     } catch (e) {
         console.error('Failed to save config:', e);
-        saveBtn.textContent = 'Error';
-        setTimeout(() => { saveBtn.textContent = 'Save'; }, 1500);
+        saveBtn.classList.add('error');
+        saveBtn.querySelector('.save-btn-text').textContent = 'ERROR';
+        setTimeout(() => {
+            saveBtn.classList.remove('error');
+            saveBtn.querySelector('.save-btn-text').textContent = 'SAVE CONFIG';
+        }, 1500);
     }
 });
 
 // ── Event listeners from Rust backend ──────────────────────────
 
 listen('status-update', (event) => {
-    const s = event.payload;
-    updateStatus(s);
+    updateStatus(event.payload);
 });
 
 listen('event-log', (event) => {
-    const entry = event.payload;
-    addEvent(entry);
+    addEvent(event.payload);
 });
 
-listen('device-error', (event) => {
-    statusValue.textContent = 'NOT FOUND';
-    statusValue.className = 'value status-error';
+listen('device-error', () => {
+    setDockState('off', 'NOT FOUND', 'Device unavailable');
 });
 
 // ── Update status dashboard ────────────────────────────────────
 
+function setDockState(state, label, sublabel) {
+    dockState.className = 'dock-state state-' + state;
+    dockLabel.textContent = label;
+    dockSublabel.textContent = sublabel || '';
+}
+
 function updateStatus(s) {
-    // Dock status
+    // Dock state
     if (s.docked === null || s.docked === undefined) {
-        statusValue.textContent = 'CONNECTING...';
-        statusValue.className = 'value status-connecting';
+        setDockState('connecting', 'CONNECTING', 'Awaiting device');
     } else if (s.docked) {
-        statusValue.textContent = '\u25CF DOCKED';
-        statusValue.className = 'value status-docked';
+        setDockState('docked', 'DOCKED', 'Base station connected');
     } else if (s.is_on) {
-        statusValue.textContent = '\u25CF UNDOCKED';
-        statusValue.className = 'value status-undocked';
+        setDockState('undocked', 'UNDOCKED', 'Wireless mode');
     } else {
-        statusValue.textContent = '\u25CB OFF';
-        statusValue.className = 'value status-off';
+        setDockState('off', 'OFF', 'Headset powered off');
     }
 
     // Battery
     if (s.battery !== null && s.battery !== undefined) {
-        batteryFill.style.width = s.battery + '%';
+        batteryFillRow.style.width = s.battery + '%';
         batteryPercent.textContent = s.battery + '%';
 
-        batteryContainer.className = 'value';
-        if (s.battery > 60) batteryContainer.classList.add('battery-ok');
-        else if (s.battery > 20) batteryContainer.classList.add('battery-mid');
-        else batteryContainer.classList.add('battery-low');
+        batteryFillRow.classList.remove('battery-low', 'battery-mid', 'battery-ok');
+        if (s.battery > 60) batteryFillRow.classList.add('battery-ok');
+        else if (s.battery > 20) batteryFillRow.classList.add('battery-mid');
+        else batteryFillRow.classList.add('battery-low');
     } else {
-        batteryFill.style.width = '0%';
+        batteryFillRow.style.width = '0%';
         batteryPercent.textContent = 'N/A';
-        batteryContainer.className = 'value';
+        batteryFillRow.classList.remove('battery-low', 'battery-mid', 'battery-ok');
     }
 
     // Charging
-    chargingValue.textContent = s.charging ? '\u26A1 Yes' : 'No';
-    chargingValue.style.color = s.charging ? '#ff9800' : '#888';
+    if (s.charging) {
+        chargingValue.textContent = 'ACTIVE';
+        chargingValue.classList.add('charging-on');
+    } else {
+        chargingValue.textContent = 'OFF';
+        chargingValue.classList.remove('charging-on');
+    }
 
     // Audio devices
     gameAudioValue.textContent = s.game_device || '--';
-    voiceAudioValue.textContent = s.same_device ? '(same as game)' : (s.voice_device || '--');
+    voiceAudioValue.textContent = s.same_device ? '(same)' : (s.voice_device || '--');
 
-    // Poll interval
+    // Poll
     pollValue.textContent = pollIntervalInput.value + 's';
 }
 
@@ -208,12 +215,10 @@ function addEvent(entry) {
     div.textContent = entry.timestamp + '  ' + entry.message;
     eventLog.appendChild(div);
 
-    // Trim old entries from DOM
     while (eventLog.children.length > MAX_EVENTS) {
         eventLog.removeChild(eventLog.firstChild);
     }
 
-    // Auto-scroll
     eventLog.scrollTop = eventLog.scrollHeight;
 }
 

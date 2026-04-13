@@ -4,83 +4,137 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A50 Dock Switch</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Scanline overlay -->
+    <div class="scanlines"></div>
+
     <div id="app">
-        <!-- Status Dashboard -->
-        <div class="panel" id="status-panel">
-            <h2>ASTRO A50 Dock Switch</h2>
-            <div class="status-grid">
-                <span class="label">Status</span>
-                <span id="status-value" class="value">CONNECTING...</span>
+        <!-- Header -->
+        <header class="header">
+            <div class="header-mark">SYS::A50</div>
+            <h1 class="header-title">DOCK SWITCH</h1>
+            <div class="header-version">v1.0</div>
+        </header>
 
-                <span class="label">Battery</span>
-                <span id="battery-value" class="value">
-                    <span class="battery-bar">
-                        <span id="battery-fill" style="width: 0%"></span>
-                    </span>
-                    <span id="battery-percent">--</span>
-                </span>
+        <!-- Dock State — hero indicator -->
+        <div class="dock-state" id="dock-state">
+            <div class="dock-indicator" id="dock-indicator">
+                <div class="dock-ring">
+                    <div class="dock-dot" id="dock-dot"></div>
+                </div>
+            </div>
+            <div class="dock-info">
+                <div class="dock-label" id="dock-label">INITIALIZING</div>
+                <div class="dock-sublabel" id="dock-sublabel">Awaiting device</div>
+            </div>
+        </div>
 
-                <span class="label">Charging</span>
-                <span id="charging-value" class="value">--</span>
-
-                <span class="label">Game Audio</span>
-                <span id="game-audio-value" class="value">--</span>
-
-                <span class="label">Voice Audio</span>
-                <span id="voice-audio-value" class="value">--</span>
-
-                <span class="label">Poll</span>
-                <span id="poll-value" class="value">--</span>
+        <!-- Telemetry Grid -->
+        <div class="telemetry">
+            <div class="tel-cell">
+                <div class="tel-key">BAT</div>
+                <div class="tel-val" id="battery-value">
+                    <div class="battery-gauge">
+                        <div class="battery-segments">
+                            <span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                            <span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                            <span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                            <span class="seg"></span>
+                        </div>
+                        <div class="battery-fill-row" id="battery-fill-row"></div>
+                    </div>
+                    <span class="battery-pct" id="battery-percent">--</span>
+                </div>
+            </div>
+            <div class="tel-cell">
+                <div class="tel-key">CHG</div>
+                <div class="tel-val" id="charging-value">--</div>
+            </div>
+            <div class="tel-cell">
+                <div class="tel-key">GAME</div>
+                <div class="tel-val tel-device" id="game-audio-value">--</div>
+            </div>
+            <div class="tel-cell">
+                <div class="tel-key">VOICE</div>
+                <div class="tel-val tel-device" id="voice-audio-value">--</div>
+            </div>
+            <div class="tel-cell">
+                <div class="tel-key">POLL</div>
+                <div class="tel-val" id="poll-value">--</div>
             </div>
         </div>
 
         <!-- Event Log -->
-        <div class="panel" id="events-panel">
-            <h3>Events</h3>
-            <div id="event-log"></div>
+        <div class="log-panel">
+            <div class="log-header">
+                <span class="log-title">EVENT LOG</span>
+                <span class="log-line"></span>
+            </div>
+            <div id="event-log" class="log-scroll"></div>
         </div>
 
         <!-- Settings (collapsible) -->
-        <div class="panel" id="settings-panel">
-            <h3 id="settings-toggle">Settings &#9660;</h3>
-            <div id="settings-content" class="hidden">
-                <fieldset>
-                    <legend>When Docked</legend>
-                    <label>Game Audio Device
-                        <select id="docked-game-device" class="device-select"></select>
+        <div class="settings-section">
+            <button class="settings-toggle" id="settings-toggle">
+                <span class="toggle-icon" id="toggle-icon">+</span>
+                <span>CONFIGURATION</span>
+            </button>
+            <div id="settings-content" class="settings-content hidden">
+                <div class="config-block">
+                    <div class="config-block-title">DOCKED PROFILE</div>
+                    <label class="field">
+                        <span class="field-label">Game Audio</span>
+                        <select id="docked-game-device" class="field-select"></select>
                     </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="docked-same-device" checked>
-                        Use same device for voice
+                    <label class="field field-row">
+                        <input type="checkbox" id="docked-same-device" checked class="field-check">
+                        <span class="field-check-label">Same device for voice</span>
                     </label>
-                    <label id="docked-voice-label" class="hidden">Voice Device
-                        <select id="docked-voice-device" class="device-select"></select>
+                    <label id="docked-voice-label" class="field hidden">
+                        <span class="field-label">Voice Audio</span>
+                        <select id="docked-voice-device" class="field-select"></select>
                     </label>
-                </fieldset>
-                <fieldset>
-                    <legend>When Undocked</legend>
-                    <label>Game Audio Device
-                        <select id="undocked-game-device" class="device-select"></select>
+                </div>
+
+                <div class="config-block">
+                    <div class="config-block-title">UNDOCKED PROFILE</div>
+                    <label class="field">
+                        <span class="field-label">Game Audio</span>
+                        <select id="undocked-game-device" class="field-select"></select>
                     </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="undocked-same-device">
-                        Use same device for voice
+                    <label class="field field-row">
+                        <input type="checkbox" id="undocked-same-device" class="field-check">
+                        <span class="field-check-label">Same device for voice</span>
                     </label>
-                    <label id="undocked-voice-label">Voice Device
-                        <select id="undocked-voice-device" class="device-select"></select>
+                    <label id="undocked-voice-label" class="field">
+                        <span class="field-label">Voice Audio</span>
+                        <select id="undocked-voice-device" class="field-select"></select>
                     </label>
-                </fieldset>
-                <label>Poll Interval (seconds)
-                    <input type="number" id="poll-interval" min="1" max="30" value="2">
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" id="auto-start">
-                    Start with Windows
-                </label>
-                <button id="save-btn">Save</button>
+                </div>
+
+                <div class="config-row">
+                    <label class="field field-inline">
+                        <span class="field-label">Poll Interval</span>
+                        <div class="field-input-wrap">
+                            <input type="number" id="poll-interval" min="1" max="30" value="2" class="field-input">
+                            <span class="field-unit">s</span>
+                        </div>
+                    </label>
+                    <label class="field field-row field-inline">
+                        <input type="checkbox" id="auto-start" class="field-check">
+                        <span class="field-check-label">Autostart</span>
+                    </label>
+                </div>
+
+                <button class="save-btn" id="save-btn">
+                    <span class="save-btn-bar"></span>
+                    <span class="save-btn-text">SAVE CONFIG</span>
+                </button>
             </div>
         </div>
     </div>

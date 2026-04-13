@@ -2,3 +2,7 @@ node_modules/
 src-tauri/target/
 dist/
 .DS_Store
+docs/
+
+# SoundVolumeView is a third-party tool — not committed to repo
+src-tauri/resources/SoundVolumeView.exe

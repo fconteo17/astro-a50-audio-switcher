@@ -66,10 +66,6 @@ pub fn start_poller(app: AppHandle, control: Arc<PollerControl>) {
     let prev_docked = Mutex::new(None::<bool>);
 
     thread::spawn(move || {
-        // Initialize COM once for this thread's lifetime
-        #[cfg(target_os = "windows")]
-        let _ = unsafe { windows::Win32::System::Com::CoInitialize(None) };
-
         loop {
             if stop_flag.load(Ordering::Relaxed) {
                 break;
@@ -134,7 +130,8 @@ pub fn start_poller(app: AppHandle, control: Arc<PollerControl>) {
 
                         // Only switch if devices are configured
                         if !game_device.is_empty() {
-                            match audio::switch_audio(&game_device, &voice_device, same_device) {
+                            let resource_dir = app.try_state::<crate::AppState>().map(|s| s.resource_dir.clone());
+                            match audio::switch_audio(&game_device, &voice_device, same_device, resource_dir.as_ref()) {
                                 Ok(detail) => {
                                     log_event(&app, &format!(
                                         "{} -> battery={}%, charging={} [switch ok: {}]",
@@ -176,9 +173,6 @@ pub fn start_poller(app: AppHandle, control: Arc<PollerControl>) {
             sleep_or_wake(&stop_flag, &wake, Duration::from_secs(config.poll_interval));
         }
 
-        // Uninitialize COM on thread exit
-        #[cfg(target_os = "windows")]
-        unsafe { windows::Win32::System::Com::CoUninitialize(); }
     });
 }
 

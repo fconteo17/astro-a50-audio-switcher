@@ -7,17 +7,19 @@
     "frontendDist": "../src"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "A50 Dock Switch",
-        "width": 400,
-        "height": 550,
+        "width": 1000,
+        "height": 700,
         "resizable": false,
         "center": true,
         "decorations": true
       }
     ],
     "trayIcon": {
+      "id": "main-tray",
       "iconPath": "icons/icon.png",
       "iconAsTemplate": false
     }
@@ -25,6 +27,13 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico"
+    ],
+    "resources": [
+      "resources/SoundVolumeView.exe"
+    ],
     "windows": {
       "webviewInstallMode": {
         "type": "embedBootstrapper"

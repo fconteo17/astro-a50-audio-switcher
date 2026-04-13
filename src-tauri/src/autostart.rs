@@ -5,38 +5,8 @@ use std::path::Path;
 const RUN_KEY_PATH: &str = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
 const APP_NAME: &str = "A50DockSwitch";
 
-/// Check if autostart is enabled.
-pub fn is_enabled() -> Result<bool, String> {
-    unsafe {
-        let mut key: HKEY = Default::default();
-        let result = RegOpenKeyExW(
-            HKEY_CURRENT_USER,
-            &HSTRING::from(RUN_KEY_PATH),
-            0,
-            KEY_READ,
-            &mut key,
-        );
-
-        if result.is_err() {
-            return Ok(false);
-        }
-
-        let result = RegQueryValueExW(
-            key,
-            &HSTRING::from(APP_NAME),
-            None,
-            None,
-            None,
-            None,
-        );
-
-        let _ = RegCloseKey(key);
-        Ok(result.is_ok())
-    }
-}
-
 /// Enable autostart by writing to the Run registry key.
-pub fn enable(exe_path: &Path) -> Result<(), String> {
+pub fn enable(exe_path: &Path) -> std::result::Result<(), String> {
     unsafe {
         let mut key: HKEY = Default::default();
         RegOpenKeyExW(
@@ -46,17 +16,23 @@ pub fn enable(exe_path: &Path) -> Result<(), String> {
             KEY_SET_VALUE,
             &mut key,
         )
+        .ok()
         .map_err(|e| format!("Failed to open Run key: {}", e))?;
 
-        let exe_str = HSTRING::from(exe_path.to_string_lossy().as_ref());
+        // Encode as null-terminated UTF-16 for REG_SZ
+        let wide: Vec<u16> = exe_path.to_string_lossy().encode_utf16().chain(std::iter::once(0)).collect();
 
         RegSetValueExW(
             key,
             &HSTRING::from(APP_NAME),
             0,
             REG_SZ,
-            Some(&exe_str.as_bytes()),
+            Some(std::slice::from_raw_parts(
+                wide.as_ptr() as *const u8,
+                wide.len() * 2,
+            )),
         )
+        .ok()
         .map_err(|e| format!("Failed to set Run value: {}", e))?;
 
         let _ = RegCloseKey(key);
@@ -65,7 +41,7 @@ pub fn enable(exe_path: &Path) -> Result<(), String> {
 }
 
 /// Disable autostart by removing the Run registry key entry.
-pub fn disable() -> Result<(), String> {
+pub fn disable() -> std::result::Result<(), String> {
     unsafe {
         let mut key: HKEY = Default::default();
         RegOpenKeyExW(
@@ -75,10 +51,18 @@ pub fn disable() -> Result<(), String> {
             KEY_SET_VALUE,
             &mut key,
         )
+        .ok()
         .map_err(|e| format!("Failed to open Run key: {}", e))?;
 
-        RegDeleteValueW(key, &HSTRING::from(APP_NAME))
-            .map_err(|e| format!("Failed to delete Run value: {}", e))?;
+        let result = RegDeleteValueW(key, &HSTRING::from(APP_NAME));
+        // It's fine if the value doesn't exist (auto-start was never enabled)
+        // ERROR_FILE_NOT_FOUND = 2 (win32) / 0x80070002 (HRESULT)
+        if let Err(e) = result.ok() {
+            if e.code().0 as u32 != 0x80070002 {
+                let _ = RegCloseKey(key);
+                return Err(format!("Failed to delete Run value: {}", e));
+            }
+        }
 
         let _ = RegCloseKey(key);
         Ok(())

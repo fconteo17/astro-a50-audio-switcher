@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Download SoundVolumeView
+        run: |
+          Invoke-WebRequest -Uri "https://www.nirsoft.net/utils/soundvolumeview-x64.zip" -OutFile "svv.zip"
+          Expand-Archive -Path "svv.zip" -DestinationPath "src-tauri/resources"
+          Move-Item -Path "src-tauri/resources/SoundVolumeView.exe" -Destination "src-tauri/resources/SoundVolumeView.exe" -ErrorAction SilentlyContinue
+        shell: pwsh
+
+      - name: Build release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'A50 Dock Switch ${{ github.ref_name }}'
+          releaseBody: |
+            Automatic release from tag ${{ github.ref_name }}.
+
+            **Note:** SoundVolumeView.exe by NirSoft is bundled in this installer for audio device switching.
+          releaseDraft: true
+          prerelease: false

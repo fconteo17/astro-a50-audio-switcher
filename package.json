@@ -7,7 +7,9 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "tauri": "npx tauri",
+    "dev": "npx tauri dev",
+    "build": "npx tauri build"
   },
   "keywords": [],
   "author": "",
